@@ -1,0 +1,74 @@
+(function(){
+  'use strict';
+  const cfg=window.DIGITAL_DUKAAN;
+  const money=n=>n===0?'Custom':`₹${Number(n).toLocaleString('en-IN',{maximumFractionDigits:2})}`;
+  const configuredDiscount=Number(cfg.discountPercent)||0;
+  const discountScope=String(cfg.discountScope||'first trial');
+  const endTime=cfg.offerEndsAt?Date.parse(`${cfg.offerEndsAt}T23:59:59`):NaN;
+  const offerActive=configuredDiscount>0&&(!cfg.offerEndsAt||(Number.isFinite(endTime)&&endTime>=Date.now()));
+  const discountPercent=offerActive?Math.min(100,Math.max(0,configuredDiscount)):0;
+  const salePrice=price=>Number(price)*(1-discountPercent/100);
+  const savings=price=>Number(price)-salePrice(price);
+  const offerLabel=document.querySelector('#hero-offer-label');
+  if(offerLabel&&offerActive){offerLabel.textContent=cfg.offerEndsAt?`${discountPercent}% OFF your ${discountScope} · Ends ${new Date(cfg.offerEndsAt+'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}`:`${discountPercent}% OFF your ${discountScope}`}
+  if(!offerActive)document.querySelector('.hero-offer')?.setAttribute('hidden','');
+  const pricingPromoLabel=document.querySelector('#pricing-promo-label');
+  if(pricingPromoLabel)pricingPromoLabel.textContent=offerActive?`FIRST-TRIAL OFFER · ${discountPercent}% OFF`:'SERVICE & PACKAGE PRICING';
+  const pricingNote=document.querySelector('#pricing-note');
+  if(pricingNote)pricingNote.textContent=`The crossed-out values are the original prices configured for these services and packages. ${offerActive?`The ${discountPercent}% discount applies to the ${discountScope} only, on listed prices.`:'No promotional discount is currently active.'} It does not apply to taxes, hosting, domains, subscriptions, advertising or other third-party costs. ${offerActive?(cfg.offerEndsAt?`Configured offer end date: ${cfg.offerEndsAt}.`:'No offer end date is configured.'):''} Confirm eligibility, scope and price before work begins.`;
+  const phoneDisplay=`+${cfg.whatsapp.slice(0,2)} ${cfg.whatsapp.slice(2,7)} ${cfg.whatsapp.slice(7)}`;
+  function waUrl(message){return `https://wa.me/${encodeURIComponent(cfg.whatsapp)}?text=${encodeURIComponent(message)}`}
+  document.querySelectorAll('.wa-link').forEach(a=>{a.href=waUrl(a.dataset.message||'Namaste, mujhe Digital Dukaan ki services ke baare mein jaankari chahiye.');a.target='_blank';a.rel='noopener noreferrer'});
+  const icons=['✳','▧','✎','⌁','▤','⌖','⌂','↗','✺','＋'];
+  const services=document.querySelector('#services-grid');
+  cfg.services.forEach((s,i)=>{const article=document.createElement('article');article.className='service-card reveal';const priceMarkup=Number(s.price)===0?`<div class="service-price-block"><span class="price-custom">Custom quote</span></div>`:offerActive?`<div class="service-price-block"><span class="discount-badge">${discountPercent}% OFF ${escapeHtml(discountScope.toUpperCase())}</span><div class="price-pair"><del>${money(s.price)}</del><strong>${money(salePrice(s.price))}</strong></div><small>Savings on your ${escapeHtml(discountScope)}: ${money(savings(s.price))}</small></div>`:`<div class="service-price-block"><div class="price-pair"><strong>${money(s.price)}</strong></div></div>`;const serviceMessage=Number(s.price)>0&&offerActive?`${s.message} Original listed price: ${money(s.price)}; ${discountScope} price: ${money(salePrice(s.price))} (${discountPercent}% off). Please confirm eligibility.`:s.message;article.innerHTML=`<div class="service-icon" aria-hidden="true">${icons[i%icons.length]}</div><h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(s.description)}</p><div class="service-bottom">${priceMarkup}<a class="button button-green" href="${waUrl(serviceMessage)}" target="_blank" rel="noopener noreferrer" aria-label="Order ${escapeHtml(s.title)} on WhatsApp">Order This Service <span aria-hidden="true">↗</span></a></div>`;services.append(article)});
+  const pricing=document.querySelector('#pricing-grid');
+  cfg.packages.forEach((p,i)=>{const article=document.createElement('article');article.className=`price-card reveal${i===1?' featured':''}`;const packagePrice=offerActive?`<div class="package-price-line"><del>${money(p.price)}</del><span class="discount-badge">${discountPercent}% OFF ${escapeHtml(discountScope.toUpperCase())}</span></div><div class="price-amount">${money(salePrice(p.price))} <small>/ ${escapeHtml(discountScope)}</small></div><p class="price-saving">Savings on your ${escapeHtml(discountScope)}: ${money(savings(p.price))}</p>`:`<div class="price-amount">${money(p.price)} <small>/ package</small></div>`;const message=`Hello Digital Dukaan! I am interested in the ${p.name} package. Original price: ${money(p.price)}; ${offerActive?`${discountScope} price: ${money(salePrice(p.price))} (${discountPercent}% off)`: `price: ${money(p.price)}`}. Please confirm eligibility and share details.`;article.innerHTML=`<h3>${escapeHtml(p.name)}</h3><p>${escapeHtml(p.description)}</p>${packagePrice}<ul>${p.items.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul><a class="button ${i===1?'button-dark':'button-outline'} wa-link" href="${waUrl(message)}" target="_blank" rel="noopener noreferrer">Get Started <span>↗</span></a>`;pricing.append(article)});
+  const teamGrid=document.querySelector('#team-grid');
+  (cfg.team||[]).forEach(member=>{const card=document.createElement('article');card.className='team-card reveal';const initials=member.name.split(/\s+/).map(part=>part[0]).join('').slice(0,2);card.innerHTML=`<div class="team-photo-wrap"><div class="team-avatar-fallback" aria-hidden="true">${escapeHtml(initials)}</div><img class="team-photo" src="${escapeHtml(member.photo||'')}" alt="Portrait of ${escapeHtml(member.name)}" loading="lazy"><span class="team-photo-glow" aria-hidden="true"></span></div><div class="team-card-copy"><span class="team-company">DIGITAL DUKAAN</span><h3>${escapeHtml(member.name)}</h3><p>${escapeHtml(member.designation)}</p></div>`;const photo=card.querySelector('.team-photo');photo.addEventListener('error',()=>{photo.hidden=true});photo.addEventListener('load',()=>{photo.classList.add('loaded')});teamGrid.append(card)});
+  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!reducedMotion&&'IntersectionObserver'in window){document.documentElement.classList.add('motion-ready');const revealObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('is-visible');revealObserver.unobserve(entry.target)}}),{threshold:.12,rootMargin:'0px 0px -30px 0px'});document.querySelectorAll('.reveal').forEach(item=>revealObserver.observe(item))}else{document.querySelectorAll('.reveal').forEach(item=>item.classList.add('is-visible'))}
+  document.querySelectorAll('.wa-link').forEach(a=>{if(!a.href||a.getAttribute('href')==='#')a.href=waUrl(a.dataset.message||'Namaste, mujhe Digital Dukaan ki services ke baare mein jaankari chahiye.')});
+  document.querySelectorAll('#founder-name,#founder-card-name,#founder-signoff-name,#footer-founder').forEach(el=>el.textContent=cfg.founder);
+  document.querySelector('#contact-phone').textContent=phoneDisplay;
+  document.querySelector('#contact-phone').href=waUrl('Namaste, mujhe Digital Dukaan ki services ke baare mein jaankari chahiye.');
+  document.querySelector('#footer-phone').textContent=phoneDisplay;
+  document.querySelector('#contact-email').textContent=cfg.suggestedEmail;
+  document.querySelector('#footer-email').textContent=cfg.suggestedEmail;
+  document.querySelector('#contact-email').href=`mailto:${encodeURIComponent(cfg.suggestedEmail)}?subject=${encodeURIComponent('Enquiry for Digital Dukaan')}`;
+  document.querySelector('#footer-email').href=`mailto:${encodeURIComponent(cfg.suggestedEmail)}?subject=${encodeURIComponent('Enquiry for Digital Dukaan')}`;
+  const socialWrap=document.querySelector('#footer-socials'),socialLinks=document.querySelector('#footer-social-links');
+  Object.entries(cfg.socialLinks||{}).forEach(([network,url])=>{if(!url)return;try{const parsed=new URL(url);if(parsed.protocol!=='https:')return;const link=document.createElement('a');link.href=parsed.href;link.target='_blank';link.rel='noopener noreferrer';link.textContent=network.charAt(0).toUpperCase()+network.slice(1);socialLinks.append(link)}catch{}});
+  if(socialLinks.childElementCount)socialWrap.hidden=false;
+  document.querySelector('#year').textContent=new Date().getFullYear();
+  const toggle=document.querySelector('.menu-toggle'),nav=document.querySelector('.primary-nav');
+  toggle.addEventListener('click',()=>{const open=toggle.getAttribute('aria-expanded')!=='true';toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-label',open?'Close navigation':'Open navigation');nav.classList.toggle('open',open)});
+  nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','Open navigation')}));
+  const form=document.querySelector('#contact-form'),status=document.querySelector('#form-status');
+  let lastWhatsAppMessage='';
+  const whatsappRetry=document.querySelector('#whatsapp-retry');
+  form.addEventListener('submit',async event=>{event.preventDefault();status.textContent='';let valid=true;form.querySelectorAll('[required]').forEach(field=>{const error=field.name==='consent'?form.querySelector('[data-error-for="consent"]'):field.parentElement.querySelector('.field-error');let message='';if(field.name==='consent'&&!field.checked)message='Please agree before sending your enquiry.';else if(field.type!=='checkbox'&&!field.value.trim())message='Please complete this required field.';else if(field.name==='phone'&&!/^[+()\d\s.-]{7,25}$/.test(field.value.trim()))message='Enter a valid phone number.';else if(field.name==='email'&&field.value.trim()&&!field.validity.valid)message='Enter a valid email address.';else if(field.name==='description'&&field.value.trim().length<10)message='Please add a little more detail (at least 10 characters).';field.setAttribute('aria-invalid',message?'true':'false');error.textContent=message;if(message)valid=false});
+    const email=form.elements.email;if(email.value.trim()&&!email.validity.valid){email.setAttribute('aria-invalid','true');email.parentElement.querySelector('.field-error').textContent='Enter a valid email address.';valid=false}
+    if(form.elements.website.value.trim()){status.textContent='Unable to submit this form.';return}
+    if(!valid){status.textContent='Please check the highlighted fields and try again.';form.querySelector('[aria-invalid="true"]').focus();return}
+    if(!form.elements.consent.checked){status.textContent='Please agree to the Privacy Policy and Terms & Conditions before continuing.';form.elements.consent.focus();return}
+    const values=new FormData(form);const message=['Hello Digital Dukaan! I would like to enquire about your services.','',`Name: ${values.get('name')}`,`Business: ${values.get('business')}`,`Phone: ${values.get('phone')}`,`Email: ${values.get('email')||'Not provided'}`,`Service: ${values.get('service')}`,`Project details: ${values.get('description')}`].join('\n');
+    lastWhatsAppMessage=message;whatsappRetry.href=waUrl(message);whatsappRetry.hidden=false;
+    const whatsappWindow=window.open('about:blank','_blank');if(whatsappWindow){whatsappWindow.opener=null;whatsappWindow.location.href=waUrl(message)}
+    const submitButton=form.querySelector('[type="submit"]');submitButton.disabled=true;submitButton.textContent='Sending enquiry…';status.textContent='Opening WhatsApp…';
+    try{
+      if(!cfg.supabase?.url||!cfg.supabase?.publishableKey)throw new Error('Database connection is not configured.');
+      const response=await fetch(`${cfg.supabase.url.replace(/\/$/,'')}/rest/v1/contact_inquiries`,{method:'POST',headers:{apikey:cfg.supabase.publishableKey,Authorization:`Bearer ${cfg.supabase.publishableKey}`,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({customer_name:String(values.get('name')).trim(),business_name:String(values.get('business')).trim(),phone:String(values.get('phone')).trim(),email:String(values.get('email')).trim()||null,service_required:String(values.get('service')).trim(),project_description:String(values.get('description')).trim(),consent_given:true,consent_policy_version:'2026-10-13'})});
+      if(!response.ok)throw new Error(`Database returned ${response.status}`);
+      status.textContent=whatsappWindow?'Your enquiry is recorded. Review the WhatsApp draft and press Send to contact us.':'Your enquiry is recorded. Your browser blocked the WhatsApp tab; use the link below to open the draft and press Send.';
+      form.reset();form.querySelectorAll('[aria-invalid]').forEach(field=>field.setAttribute('aria-invalid','false'));
+    }catch(error){console.error('Could not save enquiry:',error);status.textContent=whatsappWindow?'WhatsApp draft opened, but we could not confirm your enquiry. Please retry the form or contact us through WhatsApp.':'We could not confirm your enquiry, and the WhatsApp tab was blocked. Please retry or use a WhatsApp button.'}
+    finally{submitButton.disabled=false;submitButton.innerHTML='Send enquiry <span>↗</span>'}
+  });
+  form.querySelectorAll('input,select,textarea').forEach(field=>field.addEventListener('input',()=>{field.setAttribute('aria-invalid','false');const error=field.name==='consent'?form.querySelector('[data-error-for="consent"]'):field.parentElement.querySelector('.field-error');if(error)error.textContent=''}));
+  const policyDialog=document.querySelector('#policy-dialog');
+  document.querySelectorAll('[data-policy]').forEach(link=>link.addEventListener('click',event=>{event.preventDefault();const section=link.dataset.policy==='terms'?'#terms':'#privacy';policyDialog.showModal();document.querySelector('#policy-dialog-title').textContent=link.dataset.policy==='terms'?'Terms & Conditions':'Privacy Policy';policyDialog.querySelectorAll('.policy-content section').forEach(item=>item.hidden=item.id!==link.dataset.policy);policyDialog.querySelector(section).focus({preventScroll:true})}));
+  policyDialog.querySelector('.policy-close').addEventListener('click',()=>policyDialog.close());
+  policyDialog.addEventListener('click',event=>{if(event.target===policyDialog)policyDialog.close()});
+  function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+})();
