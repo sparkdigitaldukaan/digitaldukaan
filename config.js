@@ -3,11 +3,6 @@
 window.DIGITAL_DUKAAN = {
   businessName: "Digital Dukaan",
   tagline: "Helping Small Businesses Grow Online",
-  founder: "Spark Sharma",
-  team: [
-    { name: "Spark Sharma", designation: "Founder & CEO", photo: "assets/spark-sharma-founder.webp" },
-    { name: "Rony Shaw", designation: "Co-Founder", photo: "assets/rony-shaw.webp" }
-  ],
   whatsapp: "918858918190",
   suggestedEmail: "spark.digitaldukaan@gmail.com",
   // This publishable key is safe for browser use when table access is protected by RLS.

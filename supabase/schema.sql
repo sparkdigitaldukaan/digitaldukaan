@@ -6,22 +6,12 @@ create table if not exists public.business_settings (
   id boolean primary key default true check (id),
   business_name text not null,
   tagline text not null,
-  founder_name text not null,
   whatsapp_number text not null,
   suggested_email text not null,
   discount_percent integer not null default 0 check (discount_percent between 0 and 100),
   discount_scope text not null default 'first trial',
   offer_ends_at date,
   updated_at timestamptz not null default now()
-);
-
-create table if not exists public.team_members (
-  id text primary key,
-  name text not null,
-  designation text not null,
-  photo_url text,
-  sort_order integer not null default 0,
-  is_published boolean not null default true
 );
 
 create table if not exists public.social_links (
@@ -77,7 +67,6 @@ create table if not exists public.contact_inquiries (
 );
 
 alter table public.business_settings enable row level security;
-alter table public.team_members enable row level security;
 alter table public.social_links enable row level security;
 alter table public.services enable row level security;
 alter table public.pricing_packages enable row level security;
@@ -86,8 +75,6 @@ alter table public.contact_inquiries enable row level security;
 
 drop policy if exists "Public can read business settings" on public.business_settings;
 create policy "Public can read business settings" on public.business_settings for select to anon, authenticated using (true);
-drop policy if exists "Public can read published team" on public.team_members;
-create policy "Public can read published team" on public.team_members for select to anon, authenticated using (is_published);
 drop policy if exists "Public can read published social links" on public.social_links;
 create policy "Public can read published social links" on public.social_links for select to anon, authenticated using (is_published);
 drop policy if exists "Public can read published services" on public.services;
@@ -101,14 +88,9 @@ grant insert on public.contact_inquiries to anon;
 drop policy if exists "Public can submit contact enquiries" on public.contact_inquiries;
 create policy "Public can submit contact enquiries" on public.contact_inquiries for insert to anon with check (consent_given is true);
 
-insert into public.business_settings (id, business_name, tagline, founder_name, whatsapp_number, suggested_email, discount_percent, discount_scope, offer_ends_at)
-values (true, 'Digital Dukaan', 'Helping Small Businesses Grow Online', 'Spark Sharma', '918858918190', 'spark.digitaldukaan@gmail.com', 50, 'first trial', null)
-on conflict (id) do update set business_name=excluded.business_name, tagline=excluded.tagline, founder_name=excluded.founder_name, whatsapp_number=excluded.whatsapp_number, suggested_email=excluded.suggested_email, discount_percent=excluded.discount_percent, discount_scope=excluded.discount_scope, offer_ends_at=excluded.offer_ends_at, updated_at=now();
-
-insert into public.team_members (id, name, designation, photo_url, sort_order) values
-('spark-sharma', 'Spark Sharma', 'Founder & CEO', 'assets/spark-sharma.webp', 1),
-('rony-shaw', 'Rony Shaw', 'Co-Founder', 'assets/rony-shaw.webp', 2)
-on conflict (id) do update set name=excluded.name, designation=excluded.designation, photo_url=excluded.photo_url, sort_order=excluded.sort_order;
+insert into public.business_settings (id, business_name, tagline, whatsapp_number, suggested_email, discount_percent, discount_scope, offer_ends_at)
+values (true, 'Digital Dukaan', 'Helping Small Businesses Grow Online', '918858918190', 'spark.digitaldukaan@gmail.com', 50, 'first trial', null)
+on conflict (id) do update set business_name=excluded.business_name, tagline=excluded.tagline, whatsapp_number=excluded.whatsapp_number, suggested_email=excluded.suggested_email, discount_percent=excluded.discount_percent, discount_scope=excluded.discount_scope, offer_ends_at=excluded.offer_ends_at, updated_at=now();
 
 insert into public.social_links (platform, url) values ('instagram', ''), ('facebook', '')
 on conflict (platform) do update set url=excluded.url;
